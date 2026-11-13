@@ -1,0 +1,14 @@
+[build]
+  publish = "static"
+
+# Rewrite /static/* to root files so both /static/css/app.css and /css/app.css work
+[[redirects]]
+  from = "/static/*"
+  to = "/:splat"
+  status = 200
+
+# Fallback for Single Page App
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

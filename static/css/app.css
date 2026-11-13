@@ -1,0 +1,1048 @@
+/* 
+   Nayak's Sujay Minimal Fast GST Billing Platform
+   Persistent left sidebar with non-emoji dropdown archive & search,
+   live editable A4 invoice sheet, Excel table with Cash & Online subcolumns,
+   spacious stamp box, and Edit Format section customizer.
+*/
+
+:root {
+  --bg-app: #ECEEF1;
+  --bg-sheet: #FFFFFF;
+  --bg-sidebar: #FFFFFF;
+  --text-main: #111111;
+  --text-secondary: #444444;
+  --text-muted: #777777;
+  --border-dark: #333333;
+  --border-light: #CCCCCC;
+  --accent: #F26B1D;
+  --accent-hover: #E05A0E;
+  --accent-tint: #FFF3EA;
+  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+/* Global Input Spinner Reset: Completely eliminate number steppers/arrows */
+input[type=number]::-webkit-inner-spin-button, 
+input[type=number]::-webkit-outer-spin-button { 
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  margin: 0; 
+}
+input[type=number] { 
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--bg-app);
+  color: var(--text-main);
+  font-family: var(--font-family);
+  font-size: 13px;
+  line-height: 1.4;
+  -webkit-font-smoothing: antialiased;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Top Action Bar */
+.top-action-bar {
+  background: #FFFFFF;
+  border-bottom: 1px solid #D5D7DC;
+  height: 52px;
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  z-index: 100;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+
+.brand-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand-section img {
+  height: 34px;
+  width: auto;
+  border-radius: 4px;
+}
+
+.brand-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.brand-subtitle {
+  font-size: 10px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.action-buttons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Buttons */
+.btn {
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  height: 34px;
+  padding: 0 14px;
+  border-radius: 5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: 1px solid transparent;
+  outline: none;
+  white-space: nowrap;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: #FFFFFF;
+  border-color: var(--accent);
+}
+
+.btn-primary:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
+.btn-secondary {
+  background: #FFFFFF;
+  color: var(--text-main);
+  border: 1px solid #C4C7CC;
+}
+
+.btn-secondary:hover {
+  background: #F4F5F7;
+  border-color: #999;
+}
+
+.btn-sm {
+  height: 28px;
+  padding: 0 10px;
+  font-size: 11px;
+}
+
+/* Main Split View: Left Sidebar + Central Live A4 Workspace */
+.app-body-container {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  height: calc(100vh - 52px);
+}
+
+/* LEFT SIDEBAR: Previous Receipts & Dropdown Archive */
+.left-sidebar {
+  width: 330px;
+  background: var(--bg-sidebar);
+  border-right: 1px solid #D5D7DC;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+.sidebar-search-header {
+  padding: 12px 14px;
+  border-bottom: 1px solid #E5E7EB;
+  background: #FAFAFA;
+}
+
+.search-box {
+  display: flex;
+  gap: 6px;
+}
+
+.search-input {
+  flex: 1;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid #D1D5DB;
+  border-radius: 5px;
+  font-size: 12px;
+  font-family: inherit;
+  outline: none;
+}
+
+.search-input:focus {
+  border-color: var(--accent);
+}
+
+.sidebar-nav-tabs {
+  display: flex;
+  border-bottom: 1px solid #E5E7EB;
+  background: #FFFFFF;
+}
+
+.sidebar-tab-btn {
+  flex: 1;
+  padding: 8px 10px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  text-align: center;
+}
+
+.sidebar-tab-btn.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+  background: #FFF8F3;
+}
+
+.sidebar-scroll-area {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px;
+}
+
+/* Clean Dropdown Archive Hierarchy (NO EMOJIS) */
+.archive-dropdown {
+  margin-bottom: 6px;
+  border: 1px solid #E5E7EB;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.dropdown-header {
+  padding: 7px 10px;
+  background: #F8F9FA;
+  font-weight: 600;
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  user-select: none;
+}
+
+.dropdown-header:hover {
+  background: #F1F3F5;
+}
+
+.dropdown-chevron {
+  font-size: 10px;
+  color: #777;
+  transition: transform 0.15s ease;
+}
+
+.dropdown-header.open .dropdown-chevron {
+  transform: rotate(90deg);
+}
+
+.dropdown-content {
+  display: none;
+  padding: 4px 6px;
+  background: #FFFFFF;
+}
+
+.dropdown-content.open {
+  display: block;
+}
+
+/* Receipt Item Card in Sidebar */
+.receipt-card {
+  padding: 7px 10px;
+  border-radius: 5px;
+  border: 1px solid #E5E7EB;
+  margin-bottom: 4px;
+  cursor: pointer;
+  background: #FFFFFF;
+  transition: all 0.12s ease;
+  position: relative;
+}
+
+.btn-card-del {
+  background: transparent;
+  border: none;
+  color: #CC0000;
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 1px 4px;
+  border-radius: 3px;
+  opacity: 0.4;
+  transition: all 0.1s ease;
+}
+
+.receipt-card:hover .btn-card-del {
+  opacity: 0.9;
+}
+
+.btn-card-del:hover {
+  opacity: 1 !important;
+  background: #FFDDDD;
+}
+
+.receipt-card:hover {
+  background: #FFF8F3;
+  border-color: var(--accent);
+}
+
+.receipt-card.active {
+  background: var(--accent-tint);
+  border-color: var(--accent);
+}
+
+.receipt-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 700;
+  font-size: 12px;
+  color: #111111;
+}
+
+.receipt-card-sub {
+  font-size: 11px;
+  color: var(--text-muted);
+  display: flex;
+  justify-content: space-between;
+  margin-top: 2px;
+}
+
+/* Central Live A4 Sheet Workspace */
+.workspace-scroll-area {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px 20px 60px 20px;
+  display: flex;
+  justify-content: center;
+}
+
+/* LIVE EDITABLE A4 INVOICE SHEET */
+.a4-sheet {
+  background: var(--bg-sheet);
+  width: 820px;
+  min-height: 1060px;
+  padding: 38px 44px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  border: 1px solid #D5D7DC;
+  font-size: 12px;
+  color: var(--text-main);
+  position: relative;
+  height: fit-content;
+}
+
+/* Header */
+.sheet-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.header-left {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  max-width: 68%;
+}
+
+.header-left img.hotel-logo-img {
+  height: 76px;
+  width: auto;
+  object-fit: contain;
+}
+
+.hotel-info-block {
+  font-size: 11.5px;
+  line-height: 1.35;
+  color: #333333;
+}
+
+.hotel-name-header {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--accent);
+  letter-spacing: 0.02em;
+  margin-bottom: 1px;
+}
+
+.hotel-tagline-header {
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 4px;
+}
+
+.tax-invoice-label {
+  font-size: 26px;
+  font-weight: 800;
+  text-align: right;
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+  color: #111111;
+}
+
+/* Metadata Box & Bill To Box */
+.boxed-meta-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  border: 1px solid var(--border-dark);
+  border-bottom: none;
+}
+
+.meta-col {
+  padding: 8px 12px;
+}
+
+.meta-col.border-right {
+  border-right: 1px solid var(--border-dark);
+}
+
+.meta-line {
+  display: flex;
+  align-items: center;
+  margin-bottom: 4px;
+  font-size: 12px;
+}
+
+.meta-line:last-child {
+  margin-bottom: 0;
+}
+
+.meta-key {
+  font-weight: 700;
+  width: 100px;
+  color: #111111;
+}
+
+.boxed-bill-to {
+  border: 1px solid var(--border-dark);
+  border-bottom: none;
+  padding: 8px 12px;
+}
+
+.bill-to-title {
+  font-weight: 700;
+  font-size: 11px;
+  color: #111111;
+  margin-bottom: 4px;
+}
+
+/* Clean Inline Editable Inputs */
+.inline-input {
+  border: 1px solid transparent;
+  background: transparent;
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+  padding: 2px 4px;
+  border-radius: 3px;
+  outline: none;
+  transition: all 0.12s ease;
+  width: 100%;
+}
+
+.inline-input:hover {
+  background: #F4F6F8;
+  border-color: #D0D5DD;
+}
+
+.inline-input:focus {
+  background: #FFFFFF;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(242, 107, 29, 0.2);
+}
+
+.inline-input.bold {
+  font-weight: 700;
+}
+
+/* EXCEL-STYLE ROOM / ITEM TABLE WITH CASH & ONLINE SUBCOLUMNS */
+.excel-table-wrapper {
+  border: 1px solid var(--border-dark);
+  margin-bottom: 0;
+  position: relative;
+}
+
+table.excel-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+table.excel-table th {
+  background: var(--accent-tint);
+  font-size: 11px;
+  font-weight: 700;
+  color: #111111;
+  text-align: center;
+  padding: 6px 6px;
+  border-bottom: 1.5px solid var(--accent);
+  border-right: 1px solid var(--border-dark);
+}
+
+table.excel-table th.th-sub {
+  background: #FFE8D6;
+  font-weight: 700;
+}
+
+table.excel-table th:last-child {
+  border-right: none;
+}
+
+table.excel-table td {
+  padding: 5px 6px;
+  border-bottom: 1px solid var(--border-light);
+  border-right: 1px solid var(--border-light);
+  vertical-align: middle;
+}
+
+table.excel-table td:last-child {
+  border-right: none;
+}
+
+table.excel-table tr:last-child td {
+  border-bottom: none;
+}
+
+table.excel-table tr.data-row:hover {
+  background: #FAFBFC;
+}
+
+/* Room description combobox wrapper */
+.room-desc-wrapper {
+  display: flex;
+  align-items: center;
+  position: relative;
+  width: 100%;
+}
+
+.room-desc-wrapper input.cell-desc {
+  flex: 1;
+  padding-right: 20px;
+}
+
+.btn-room-dropdown {
+  position: absolute;
+  right: 2px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  font-size: 9px;
+  color: #888888;
+  cursor: pointer;
+  padding: 3px 4px;
+  border-radius: 3px;
+  line-height: 1;
+}
+
+.btn-room-dropdown:hover {
+  background: #E5E7EB;
+  color: #111;
+}
+
+/* Room dropdown menu */
+.room-options-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  min-width: 220px;
+  background: #FFFFFF;
+  border: 1px solid #C4C7CC;
+  border-radius: 5px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  z-index: 200;
+  display: none;
+  margin-top: 2px;
+  padding: 4px 0;
+}
+
+.room-options-menu.open {
+  display: block;
+}
+
+.room-option-item {
+  padding: 7px 12px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #222;
+  cursor: pointer;
+  transition: background 0.1s ease;
+  white-space: nowrap;
+}
+
+.room-option-item:hover {
+  background: var(--accent-tint);
+  color: var(--accent);
+}
+
+.row-delete-btn {
+  background: transparent;
+  border: none;
+  color: #AA0000;
+  cursor: pointer;
+  padding: 2px;
+  display: none;
+  border-radius: 3px;
+}
+
+table.excel-table tr.data-row:hover .row-delete-btn {
+  display: inline-block;
+}
+
+.row-delete-btn:hover {
+  background: #FFDDDD;
+}
+
+/* Add Row bar */
+.add-row-bar {
+  background: #FAFAFA;
+  border-top: 1px dashed #D0D5DD;
+  text-align: center;
+  padding: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.add-row-bar:hover {
+  background: #FFF3EA;
+  color: var(--accent);
+}
+
+.add-row-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: inherit;
+}
+
+/* BOTTOM SECTION: Left (Words, Notes) | Right (Totals, Signature Stamp Box) */
+.sheet-bottom-grid {
+  display: grid;
+  grid-template-columns: 1fr 260px;
+  border: 1px solid var(--border-dark);
+  border-top: none;
+}
+
+.bottom-left-col {
+  padding: 12px 14px;
+  border-right: 1px solid var(--border-dark);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.words-block {
+  margin-bottom: 14px;
+}
+
+.words-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: #111111;
+  margin-bottom: 3px;
+}
+
+.words-text {
+  font-size: 12px;
+  font-style: italic;
+  font-weight: 600;
+  color: #222222;
+}
+
+.notes-block {
+  font-size: 11px;
+}
+
+.notes-title {
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.terms-block {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px dashed #D0D5DD;
+}
+
+.terms-title {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 2px;
+}
+
+.terms-body {
+  font-size: 9.5px;
+  color: #666;
+  line-height: 1.35;
+}
+
+.bottom-right-col {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.summary-rows {
+  padding: 8px 12px;
+}
+
+.summary-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 3px 0;
+  font-size: 12px;
+  border-bottom: 1px solid #EEEEEE;
+}
+
+.summary-line:last-child {
+  border-bottom: none;
+}
+
+.summary-line.total-line {
+  border-top: 1.5px solid var(--accent);
+  border-bottom: 1.5px solid var(--accent);
+  background: var(--accent-tint);
+  padding: 6px 8px;
+  margin-top: 5px;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--accent);
+  border-radius: 4px;
+}
+
+/* BIG SPACIOUS SIGNATURE & STAMP BOX (Clean, no [STAMP/SEAL AREA] placeholder!) */
+.signature-stamp-box {
+  border-top: 1px solid var(--border-dark);
+  height: 120px;
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  background: #FCFCFC;
+}
+
+.for-hotel-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.stamp-space {
+  flex: 1;
+  width: 100%;
+}
+
+.signature-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #111111;
+  border-top: 1px dashed #CCCCCC;
+  width: 90%;
+  text-align: center;
+  padding-top: 4px;
+}
+
+/* PRETTY THANK YOU NOTE in Signature Orange */
+.sheet-thank-you {
+  text-align: center;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 700;
+  font-style: italic;
+  padding-top: 18px;
+  letter-spacing: 0.02em;
+}
+
+/* INTERACTIVE 2-CLICK DATE RANGE CALENDAR POPOVER */
+.date-popover {
+  position: absolute;
+  width: 250px;
+  background: #FFFFFF;
+  border: 1px solid #C4C7CC;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+  z-index: 300;
+  padding: 10px;
+  font-family: inherit;
+}
+
+.popover-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.popover-nav-btn {
+  background: #F3F4F6;
+  border: 1px solid #D1D5DB;
+  border-radius: 4px;
+  padding: 2px 7px;
+  font-size: 12px;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.popover-nav-btn:hover {
+  background: var(--accent-tint);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.popover-status {
+  background: var(--accent-tint);
+  border: 1px solid #FFD3B5;
+  border-radius: 4px;
+  padding: 4px 6px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--accent);
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.popover-days-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  text-align: center;
+}
+
+.popover-day-name {
+  font-size: 9px;
+  font-weight: 700;
+  color: #888888;
+  padding: 3px 0;
+}
+
+.popover-day-cell {
+  font-size: 11px;
+  padding: 5px 0;
+  cursor: pointer;
+  border-radius: 4px;
+  user-select: none;
+  transition: all 0.1s ease;
+}
+
+.popover-day-cell:hover:not(.empty) {
+  background: #F3F4F6;
+}
+
+.popover-day-cell.selected-in {
+  background: var(--accent) !important;
+  color: #FFFFFF !important;
+  font-weight: 700;
+}
+
+.popover-day-cell.selected-out {
+  background: var(--accent) !important;
+  color: #FFFFFF !important;
+  font-weight: 700;
+}
+
+.popover-day-cell.in-range {
+  background: var(--accent-tint) !important;
+  color: var(--accent) !important;
+  font-weight: 600;
+}
+
+.popover-day-cell.empty {
+  cursor: default;
+  background: transparent;
+}
+
+.popover-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid #EEEEEE;
+}
+
+/* EDIT FORMAT MODAL */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.5);
+  backdrop-filter: blur(2px);
+  z-index: 500;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-overlay.open {
+  display: flex;
+}
+
+.modal-box {
+  background: #FFFFFF;
+  border-radius: 8px;
+  width: 640px;
+  max-width: 92vw;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+
+.modal-box-header {
+  padding: 14px 20px;
+  border-bottom: 1px solid #E5E7EB;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.modal-box-header h3 {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.modal-box-body {
+  padding: 18px 20px;
+  overflow-y: auto;
+  font-size: 12px;
+}
+
+.modal-box-footer {
+  padding: 12px 20px;
+  border-top: 1px solid #E5E7EB;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  background: #F9FAFB;
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+}
+
+.form-label {
+  font-weight: 700;
+  font-size: 11px;
+  color: #333333;
+  margin-bottom: 3px;
+  display: block;
+}
+
+.form-control {
+  width: 100%;
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid #D1D5DB;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 12px;
+  margin-bottom: 10px;
+  outline: none;
+}
+
+.form-control:focus {
+  border-color: var(--accent);
+}
+
+/* Toast */
+.toast-bar {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: #111111;
+  color: #FFFFFF;
+  padding: 9px 20px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.15);
+  display: none;
+  z-index: 600;
+  transition: all 0.2s ease;
+}
+
+.toast-bar.show {
+  display: block;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* CLEAN A4 PRINT STYLES */
+@media print {
+  body {
+    background: #FFFFFF !important;
+    overflow: visible !important;
+    height: auto !important;
+  }
+
+  .top-action-bar,
+  .left-sidebar,
+  .modal-overlay,
+  .toast-bar,
+  .add-row-bar,
+  .row-delete-btn,
+  .no-print {
+    display: none !important;
+  }
+
+  .app-body-container {
+    height: auto !important;
+    display: block !important;
+  }
+
+  .workspace-scroll-area {
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    display: block !important;
+  }
+
+  .a4-sheet {
+    box-shadow: none !important;
+    border: none !important;
+    width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .inline-input {
+    border: none !important;
+    background: transparent !important;
+    padding: 0 !important;
+  }
+
+  @page {
+    size: A4 portrait;
+    margin: 10mm 10mm;
+  }
+}
