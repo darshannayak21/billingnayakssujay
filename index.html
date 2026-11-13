@@ -10,12 +10,18 @@
   <link rel="stylesheet" href="/static/css/app.css" />
   <!-- Client-side Fast A4 PDF Generator -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-  <!-- Clerk Modern Core SDK with Full UI Components -->
+  <!-- Clerk Modern Core SDK (v6) with UI Components Bundle -->
   <script
-    async
+    defer
+    crossorigin="anonymous"
+    src="https://safe-leopard-1821.clerk.accounts.dev/npm/@clerk/ui@1/dist/ui.browser.js"
+    type="text/javascript"
+  ></script>
+  <script
+    defer
     crossorigin="anonymous"
     data-clerk-publishable-key="pk_test_c2FmZS1sZW9wYXJkLTE4MjEuY2xlcmsuYWNjb3VudHMuZGV2JA"
-    src="https://safe-leopard-1821.clerk.accounts.dev/npm/@clerk/clerk-js@5.128.2/dist/clerk.browser.js"
+    src="https://safe-leopard-1821.clerk.accounts.dev/npm/@clerk/clerk-js@6/dist/clerk.browser.js"
     type="text/javascript"
   ></script>
 </head>

@@ -16,9 +16,9 @@ async function initClerkAuth() {
   const userButtonDiv = document.getElementById('clerk-user-button');
   const loadingText = document.getElementById('auth-loading-text');
 
-  // Wait for window.Clerk to be injected by the CDN script
+  // Wait for window.Clerk and window.__internal_ClerkUICtor from CDN
   let attempts = 0;
-  while (!window.Clerk && attempts < 80) {
+  while ((!window.Clerk || !window.__internal_ClerkUICtor) && attempts < 80) {
     await new Promise(r => setTimeout(r, 100));
     attempts++;
   }
@@ -69,6 +69,7 @@ async function initClerkAuth() {
     if (!window.Clerk.loaded) {
       await window.Clerk.load({
         publishableKey: CLERK_PUBLISHABLE_KEY,
+        clerkUICtor: window.__internal_ClerkUICtor,
         appearance: clerkAppearance
       });
     }
