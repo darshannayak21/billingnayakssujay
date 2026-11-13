@@ -230,7 +230,7 @@ const AppDB = {
     const cgstAmount = Math.round(subtotal * (cgstRate / 100) * 100) / 100;
     const sgstAmount = Math.round(subtotal * (sgstRate / 100) * 100) / 100;
     const grandTotal = Math.round((subtotal + cgstAmount + sgstAmount) * 100) / 100;
-    const totalInWords = Utils.numberToWordsIndian(grandTotal);
+    const totalInWords = Utils.numberToWords ? Utils.numberToWords(grandTotal) : (Utils.numberToWordsIndian ? Utils.numberToWordsIndian(grandTotal) : '');
 
     let seq = 1;
     const match = (payload.invoice_number || '').match(/\d+/);

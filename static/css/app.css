@@ -338,15 +338,16 @@ body {
 /* LIVE EDITABLE A4 INVOICE SHEET */
 .a4-sheet {
   background: var(--bg-sheet);
-  width: 820px;
+  width: 794px;
   min-height: 1060px;
-  padding: 38px 44px;
+  padding: 34px 36px;
   box-shadow: 0 4px 20px rgba(0,0,0,0.08);
   border: 1px solid #D5D7DC;
   font-size: 12px;
   color: var(--text-main);
   position: relative;
   height: fit-content;
+  box-sizing: border-box;
 }
 
 /* Header */
@@ -355,6 +356,7 @@ body {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 14px;
+  width: 100%;
 }
 
 .header-left {
@@ -394,12 +396,14 @@ body {
 }
 
 .tax-invoice-label {
-  font-size: 26px;
+  font-size: 24px;
   font-weight: 800;
   text-align: right;
-  line-height: 1.05;
+  line-height: 1.1;
   letter-spacing: -0.01em;
   color: #111111;
+  white-space: nowrap;
+  padding-right: 2px;
 }
 
 /* Metadata Box & Bill To Box */
@@ -995,6 +999,29 @@ table.excel-table tr.data-row:hover .row-delete-btn {
 .toast-bar.show {
   display: block;
   transform: translateX(-50%) translateY(0);
+}
+
+/* CLEAN A4 PDF EXPORT STYLES (for html2pdf rendering) */
+.pdf-exporting {
+  width: 794px !important;
+  max-width: 794px !important;
+  min-width: 794px !important;
+  margin: 0 auto !important;
+  box-shadow: none !important;
+  border: 1px solid #D5D7DC !important;
+  background: #FFFFFF !important;
+}
+
+.pdf-exporting .add-row-bar,
+.pdf-exporting .btn-room-dropdown,
+.pdf-exporting .row-delete-btn,
+.pdf-exporting .no-print {
+  display: none !important;
+}
+
+.pdf-exporting .inline-input {
+  border-bottom: none !important;
+  background: transparent !important;
 }
 
 /* CLEAN A4 PRINT STYLES */

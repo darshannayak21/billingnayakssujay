@@ -84,6 +84,10 @@ const Utils = {
     return result;
   },
 
+  numberToWordsIndian(amount) {
+    return this.numberToWords(amount);
+  },
+
   getTodayISO() {
     const d = new Date();
     const y = d.getFullYear();

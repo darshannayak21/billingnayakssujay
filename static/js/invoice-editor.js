@@ -294,13 +294,13 @@ const InvoiceEditor = {
           </td>
 
           <!-- Check-in (95px, zero clipping) -->
-          <td style="width: 95px; padding: 4px 2px;">
-            <input type="text" class="inline-input cell-checkin" data-index="${idx}" value="${it.checkin}" style="text-align: center; cursor: pointer; font-size: 11px; padding: 2px 0; width: 100%; letter-spacing: -0.2px;" title="Click to select Check-in & Check-out dates on calendar" readonly />
+          <td style="width: 95px; padding: 4px 1px;">
+            <input type="text" class="inline-input cell-checkin" data-index="${idx}" value="${it.checkin}" style="text-align: center; cursor: pointer; font-size: 10.5px; padding: 2px 0; width: 100%; box-sizing: border-box;" title="Click to select Check-in & Check-out dates on calendar" readonly />
           </td>
 
           <!-- Check-out (95px, zero clipping, auto-updates invoice date) -->
-          <td style="width: 95px; padding: 4px 2px;">
-            <input type="text" class="inline-input cell-checkout" data-index="${idx}" value="${it.checkout}" style="text-align: center; cursor: pointer; font-size: 11px; padding: 2px 0; width: 100%; letter-spacing: -0.2px;" title="Click to select Check-in & Check-out dates on calendar" readonly />
+          <td style="width: 95px; padding: 4px 1px;">
+            <input type="text" class="inline-input cell-checkout" data-index="${idx}" value="${it.checkout}" style="text-align: center; cursor: pointer; font-size: 10.5px; padding: 2px 0; width: 100%; box-sizing: border-box;" title="Click to select Check-in & Check-out dates on calendar" readonly />
           </td>
 
           <!-- Qty (36px) -->
@@ -744,16 +744,28 @@ const InvoiceEditor = {
 
   async downloadPdf() {
     let inv = await this.saveInvoice();
-    const invNum = document.getElementById('inp-invoice-number').value.trim() || 'INV';
+    if (!inv && this.currentInvoiceId) {
+      inv = { id: this.currentInvoiceId, invoice_number: document.getElementById('inp-invoice-number').value.trim() };
+    }
+    const invNum = (inv && inv.invoice_number) ? inv.invoice_number : (document.getElementById('inp-invoice-number').value.trim() || 'INV');
     const sheet = document.getElementById('invoice-sheet');
     this.showToast('Preparing clean A4 PDF...');
 
     if (window.html2pdf) {
+      sheet.classList.add('pdf-exporting');
       const opt = {
-        margin: [4, 4, 4, 4],
+        margin: 0,
         filename: `Nayak_Sujay_${invNum}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, logging: false },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          width: 794,
+          windowWidth: 794,
+          scrollX: 0,
+          scrollY: 0
+        },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
       };
       try {
@@ -762,6 +774,8 @@ const InvoiceEditor = {
       } catch (err) {
         console.error('html2pdf error:', err);
         window.print();
+      } finally {
+        sheet.classList.remove('pdf-exporting');
       }
     } else {
       window.print();
