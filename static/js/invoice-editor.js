@@ -278,10 +278,17 @@ const InvoiceEditor = {
       const rowTotal = ((parseFloat(it.cash) || 0) + (parseFloat(it.online) || 0)) * (parseInt(it.qty) || 1);
       return `
         <tr class="data-row" data-index="${idx}">
-          <td style="text-align: center; color: #555; width: 28px; padding: 4px 2px;">${idx + 1}</td>
+          <td style="text-align: center; color: #555; width: 44px; padding: 5px 4px; font-weight: 500;">
+            <div style="display: flex; align-items: center; justify-content: center; gap: 2px;">
+              <span>${idx + 1}</span>
+              ${this.items.length > 1 ? `
+                <button type="button" class="row-delete-btn" data-index="${idx}" title="Delete row" style="display: none; padding: 0; margin-left: 2px; border: none; background: transparent; cursor: pointer; color: #AA0000; font-size: 13px;">&times;</button>
+              ` : ''}
+            </div>
+          </td>
           
           <!-- Room Description Combobox with quick dropdown showing all presets -->
-          <td style="width: 195px; padding: 4px;">
+          <td style="width: 220px; padding: 4px;">
             <div class="room-desc-wrapper">
               <input type="text" class="inline-input cell-desc bold" data-index="${idx}" value="${Utils.escapeHtml(it.description)}" placeholder="Select or enter room..." autocomplete="off" />
               <button type="button" class="btn-room-dropdown" data-index="${idx}" title="Click to view all room presets">▼</button>
@@ -303,31 +310,24 @@ const InvoiceEditor = {
             <input type="text" class="inline-input cell-checkout" data-index="${idx}" value="${it.checkout}" style="text-align: center; cursor: pointer; font-size: 10.5px; padding: 2px 0; width: 100%; box-sizing: border-box;" title="Click to select Check-in & Check-out dates on calendar" readonly />
           </td>
 
-          <!-- Qty (36px) -->
-          <td style="width: 36px; text-align: center; padding: 4px 1px;">
+          <!-- Qty (40px) -->
+          <td style="width: 40px; text-align: center; padding: 4px 1px;">
             <input type="number" min="1" class="inline-input cell-qty" data-index="${idx}" value="${it.qty || 1}" style="text-align: center; padding: 2px 0; width: 100%;" />
           </td>
 
-          <!-- Cash (65px, reduced width, right-aligned, spinners removed) -->
-          <td style="width: 65px; text-align: right; padding: 4px 2px;">
+          <!-- Cash (70px, right-aligned, spinners removed) -->
+          <td style="width: 70px; text-align: right; padding: 4px 2px;">
             <input type="number" step="0.01" min="0" class="inline-input cell-cash bold" data-index="${idx}" value="${it.cash !== undefined ? it.cash : 0}" style="text-align: right; font-size: 11.5px; padding: 2px 2px; width: 100%;" placeholder="0" />
           </td>
 
-          <!-- Online (65px, reduced width, right-aligned, spinners removed) -->
-          <td style="width: 65px; text-align: right; padding: 4px 2px;">
+          <!-- Online (70px, right-aligned, spinners removed) -->
+          <td style="width: 70px; text-align: right; padding: 4px 2px;">
             <input type="number" step="0.01" min="0" class="inline-input cell-online bold" data-index="${idx}" value="${it.online !== undefined ? it.online : 0}" style="text-align: right; font-size: 11.5px; padding: 2px 2px; width: 100%;" placeholder="0" />
           </td>
 
-          <!-- Row Total (105px, fits on ONE line) -->
-          <td class="cell-row-total" style="width: 105px; text-align: right; font-weight: 700; color: #111; padding: 4px 4px; white-space: nowrap; font-size: 11.5px;">
+          <!-- Row Total (110px, fits on ONE line) -->
+          <td class="cell-row-total" style="width: 110px; text-align: right; font-weight: 700; color: #111; padding: 4px 6px; white-space: nowrap; font-size: 11.5px;">
             ₹ ${Utils.formatCurrency(rowTotal)}
-          </td>
-
-          <!-- Delete Row Button -->
-          <td style="width: 26px; text-align: center; padding: 2px;">
-            <button type="button" class="row-delete-btn" data-index="${idx}" title="Delete row" ${this.items.length === 1 ? 'style="display:none;"' : ''}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-            </button>
           </td>
         </tr>
       `;
@@ -749,25 +749,25 @@ const InvoiceEditor = {
     }
     const invNum = (inv && inv.invoice_number) ? inv.invoice_number : (document.getElementById('inp-invoice-number').value.trim() || 'INV');
     const sheet = document.getElementById('invoice-sheet');
-    this.showToast('Preparing clean A4 PDF...');
+    this.showToast('Generating official A4 PDF...');
 
     if (window.html2pdf) {
       sheet.classList.add('pdf-exporting');
+
       const opt = {
-        margin: 0,
+        margin: [8, 0, 8, 0],
         filename: `Nayak_Sujay_${invNum}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: {
           scale: 2,
           useCORS: true,
           logging: false,
-          width: 794,
-          windowWidth: 794,
-          scrollX: 0,
-          scrollY: 0
+          scrollY: 0,
+          scrollX: 0
         },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
       };
+
       try {
         await html2pdf().set(opt).from(sheet).save();
         this.showToast(`Downloaded Nayak_Sujay_${invNum}.pdf`);
