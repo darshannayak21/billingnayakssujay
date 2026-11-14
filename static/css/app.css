@@ -500,7 +500,7 @@ table.excel-table th {
   font-weight: 700;
   color: #111111;
   text-align: center;
-  padding: 6px 6px;
+  padding: 6px 4px;
   border-bottom: 1.5px solid var(--accent);
   border-right: 1px solid var(--border-dark);
 }
@@ -508,6 +508,11 @@ table.excel-table th {
 table.excel-table th.th-sub {
   background: #FFE8D6;
   font-weight: 700;
+  border-right: 1px solid var(--border-dark);
+}
+
+table.excel-table th.th-total {
+  border-right: none;
 }
 
 table.excel-table th:last-child {
@@ -515,7 +520,7 @@ table.excel-table th:last-child {
 }
 
 table.excel-table td {
-  padding: 5px 6px;
+  padding: 5px 4px;
   border-bottom: 1px solid var(--border-light);
   border-right: 1px solid var(--border-light);
   vertical-align: middle;
@@ -648,7 +653,7 @@ table.excel-table tr.data-row:hover .row-delete-btn {
 /* BOTTOM SECTION: Left (Words, Notes) | Right (Totals, Signature Stamp Box) */
 .sheet-bottom-grid {
   display: grid;
-  grid-template-columns: 1fr 260px;
+  grid-template-columns: 1fr 264px;
   border: 1px solid var(--border-dark);
   border-top: none;
 }
@@ -731,15 +736,21 @@ table.excel-table tr.data-row:hover .row-delete-btn {
 }
 
 .summary-line.total-line {
-  border-top: 1.5px solid var(--accent);
-  border-bottom: 1.5px solid var(--accent);
+  border: 1.5px solid var(--accent);
   background: var(--accent-tint);
-  padding: 6px 8px;
-  margin-top: 5px;
-  font-size: 14px;
+  padding: 6px 10px;
+  margin-top: 6px;
+  font-size: 13.5px;
   font-weight: 800;
   color: var(--accent);
   border-radius: 4px;
+  box-sizing: border-box;
+}
+
+.summary-line.total-line strong {
+  font-size: 14px;
+  color: var(--accent);
+  padding-right: 2px;
 }
 
 /* BIG SPACIOUS SIGNATURE & STAMP BOX (Clean, no [STAMP/SEAL AREA] placeholder!) */
@@ -1010,18 +1021,46 @@ table.excel-table tr.data-row:hover .row-delete-btn {
   box-shadow: none !important;
   border: 1px solid #D5D7DC !important;
   background: #FFFFFF !important;
+  -webkit-font-smoothing: antialiased;
 }
 
 .pdf-exporting .add-row-bar,
 .pdf-exporting .btn-room-dropdown,
 .pdf-exporting .row-delete-btn,
+.pdf-exporting .room-options-menu,
 .pdf-exporting .no-print {
   display: none !important;
 }
 
+.pdf-exporting input,
+.pdf-exporting textarea,
+.pdf-exporting select,
 .pdf-exporting .inline-input {
-  border-bottom: none !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
   background: transparent !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.pdf-exporting input::placeholder,
+.pdf-exporting textarea::placeholder {
+  color: transparent !important;
+  opacity: 0 !important;
+}
+
+.pdf-clean-text {
+  display: inline-block;
+  line-height: 1.35;
+  color: #111111;
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
 }
 
 /* CLEAN A4 PRINT STYLES */

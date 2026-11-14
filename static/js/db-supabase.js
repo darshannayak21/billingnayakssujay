@@ -132,8 +132,11 @@ const AppDB = {
     try {
       let endpoint = 'invoices?select=*&order=created_at.desc&limit=50';
       if (searchQuery && searchQuery.trim()) {
-        const q = encodeURIComponent(`%${searchQuery.trim()}%`);
-        endpoint = `invoices?select=*&or=(invoice_number.ilike.${q},bill_to_name.ilike.${q},invoice_date.ilike.${q})&order=created_at.desc&limit=50`;
+        let cleanQ = searchQuery.trim();
+        // Normalize / to - for date searching (e.g. 14/11/2026 -> 14-11-2026)
+        cleanQ = cleanQ.replace(/\//g, '-');
+        const q = encodeURIComponent(`%${cleanQ}%`);
+        endpoint = `invoices?select=*&or=(invoice_number.ilike.${q},bill_to_name.ilike.${q},invoice_date.ilike.${q},bill_to_address.ilike.${q},bill_to_gstin.ilike.${q},notes.ilike.${q})&order=created_at.desc&limit=100`;
       }
       const rows = await this.query(endpoint);
       return (rows || []).map(r => ({
@@ -311,7 +314,7 @@ const AppDB = {
 
   async getArchiveTree() {
     try {
-      const rows = await this.query('invoices?select=id,invoice_number,sequence_number,invoice_date,bill_to_name,total_amount&order=invoice_date.asc,sequence_number.asc');
+      const rows = await this.query('invoices?select=id,invoice_number,sequence_number,invoice_date,bill_to_name,total_amount&order=sequence_number.desc&limit=1000');
       if (!rows) return {};
 
       const parseDateSafely = (dateStr) => {
@@ -332,10 +335,11 @@ const AppDB = {
       };
 
       const getFY = (d) => {
-        if (!d) return 'FY 2026-27';
+        if (!d) return '2026 (FY 2026-27)';
         const y = d.getFullYear();
         const m = d.getMonth() + 1; // 1-12
-        return m >= 4 ? `FY ${y}-${String(y + 1).slice(-2)}` : `FY ${y - 1}-${String(y).slice(-2)}`;
+        const fyStr = m >= 4 ? `FY ${y}-${String(y + 1).slice(-2)}` : `FY ${y - 1}-${String(y).slice(-2)}`;
+        return `${y} (${fyStr})`;
       };
 
       const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];

@@ -170,6 +170,7 @@ const InvoiceEditor = {
 
   async init() {
     await this.loadSettings();
+    this.renderBillToFields();
     await this.resetToNewInvoice();
     this.bindEvents();
     this.bindEditFormatModal();
@@ -220,6 +221,102 @@ const InvoiceEditor = {
     ];
   },
 
+  DEFAULT_BILL_TO_FORMAT: [
+    { id: 'name', key: 'customer_name', label: 'Customer / Guest Name', placeholder: 'Customer / Guest Name *', required: true, bold: true, width: '100%', deletable: false },
+    { id: 'address', key: 'customer_address', label: 'Address / City, State', placeholder: 'Address / City, State', required: false, bold: false, width: '68%', deletable: true },
+    { id: 'pincode', key: 'customer_pincode', label: 'Pincode', placeholder: 'Pincode', required: false, bold: false, width: '30%', deletable: true },
+    { id: 'gstin', key: 'customer_gstin', label: 'GSTIN', placeholder: 'Enter GSTIN', prefix: 'GSTIN:', required: false, bold: true, width: '240px', uppercase: true, deletable: true }
+  ],
+
+  getBillToFormat() {
+    try {
+      const saved = localStorage.getItem('nayak_bill_to_format');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {
+      console.warn('Error reading bill_to_format:', e);
+    }
+    return JSON.parse(JSON.stringify(this.DEFAULT_BILL_TO_FORMAT));
+  },
+
+  saveBillToFormat(formatList) {
+    try {
+      localStorage.setItem('nayak_bill_to_format', JSON.stringify(formatList));
+    } catch (e) {
+      console.error('Error saving bill_to_format:', e);
+    }
+    this.renderBillToFields();
+  },
+
+  renderBillToFields(currentValues = null) {
+    const root = document.getElementById('bill-to-fields-root');
+    if (!root) return;
+
+    // Capture currently entered values if not explicitly provided
+    const vals = currentValues || {};
+    if (!currentValues) {
+      const nameInp = document.getElementById('inp-customer-name');
+      if (nameInp) vals.customer_name = nameInp.value;
+      const gstinInp = document.getElementById('inp-customer-gstin');
+      if (gstinInp) vals.customer_gstin = gstinInp.value;
+      const allInps = root.querySelectorAll('input');
+      allInps.forEach(inp => {
+        if (inp.dataset.key) vals[inp.dataset.key] = inp.value;
+        if (inp.id) vals[inp.id] = inp.value;
+      });
+    }
+
+    const fields = this.getBillToFormat();
+    let html = '';
+
+    let i = 0;
+    while (i < fields.length) {
+      const f = fields[i];
+      const nextF = fields[i + 1];
+
+      // Pair adjacent half-row fields (e.g. Address & Pincode)
+      if (f.width !== '100%' && f.id !== 'gstin' && nextF && nextF.width !== '100%' && nextF.id !== 'gstin') {
+        const val1 = vals[`inp-billto-${f.id}`] !== undefined ? vals[`inp-billto-${f.id}`] : (vals[f.key] || vals[f.id] || '');
+        const val2 = vals[`inp-billto-${nextF.id}`] !== undefined ? vals[`inp-billto-${nextF.id}`] : (vals[nextF.key] || vals[nextF.id] || '');
+        html += `
+          <div style="display: flex; gap: 8px; margin-bottom: 2px;">
+            <input type="text" id="inp-billto-${f.id}" class="inline-input ${f.bold ? 'bold' : ''}" style="flex: 3;" placeholder="${Utils.escapeHtml(f.placeholder || f.label)}" value="${Utils.escapeHtml(val1)}" data-key="${f.key || f.id}" />
+            <input type="text" id="inp-billto-${nextF.id}" class="inline-input ${nextF.bold ? 'bold' : ''}" style="flex: 1; max-width: 140px;" placeholder="${Utils.escapeHtml(nextF.placeholder || nextF.label)}" value="${Utils.escapeHtml(val2)}" data-key="${nextF.key || nextF.id}" />
+          </div>
+        `;
+        i += 2;
+        continue;
+      }
+
+      const val = vals[`inp-billto-${f.id}`] !== undefined ? vals[`inp-billto-${f.id}`] : (vals[f.key] || vals[f.id] || '');
+
+      if (f.id === 'name' || f.key === 'customer_name') {
+        html += `
+          <input type="text" id="inp-customer-name" class="inline-input bold" style="font-size: 13px; margin-bottom: 2px;" placeholder="${Utils.escapeHtml(f.placeholder || f.label)}" value="${Utils.escapeHtml(val)}" data-key="customer_name" />
+        `;
+      } else if (f.id === 'gstin' || f.key === 'customer_gstin') {
+        html += `
+          <div class="bill-to-gstin-row" style="display: flex; align-items: center; gap: 6px; margin-top: 2px;">
+            <span style="font-weight: 700; color: #111;">${Utils.escapeHtml(f.prefix || 'GSTIN:')}</span>
+            <input type="text" id="inp-customer-gstin" class="inline-input bold" style="width: ${f.width || '240px'}; text-transform: uppercase;" placeholder="${Utils.escapeHtml(f.placeholder || 'Enter GSTIN')}" value="${Utils.escapeHtml(val)}" data-key="customer_gstin" />
+          </div>
+        `;
+      } else {
+        html += `
+          <div class="bill-to-custom-row" style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
+            ${f.label ? `<span style="font-size: 11px; font-weight: 600; color: #444; white-space: nowrap;">${Utils.escapeHtml(f.label)}:</span>` : ''}
+            <input type="text" id="inp-billto-${f.id}" class="inline-input ${f.bold ? 'bold' : ''}" style="flex: 1; ${f.uppercase ? 'text-transform: uppercase;' : ''}" placeholder="${Utils.escapeHtml(f.placeholder || f.label)}" value="${Utils.escapeHtml(val)}" data-key="${f.key || f.id}" />
+          </div>
+        `;
+      }
+      i++;
+    }
+
+    root.innerHTML = html;
+  },
+
   async resetToNewInvoice() {
     this.currentInvoiceId = null;
     const deleteBtn = document.getElementById('btn-delete-bill');
@@ -247,10 +344,9 @@ const InvoiceEditor = {
     // Invoice Date matches Checkout Date in DD-MM-YYYY
     document.getElementById('inp-invoice-date').value = today;
     document.getElementById('inp-terms').value = (this.settings && this.settings.terms_default) || 'Due on Receipt';
-    document.getElementById('inp-customer-name').value = '';
-    document.getElementById('inp-customer-address').value = '';
-    document.getElementById('inp-customer-pincode').value = '';
-    document.getElementById('inp-customer-gstin').value = '';
+
+    // Reset Bill To fields cleanly
+    this.renderBillToFields({});
 
     const presets = this.getRoomPresets();
 
@@ -267,7 +363,8 @@ const InvoiceEditor = {
 
     this.renderTableRows();
     this.recalculate();
-    document.getElementById('inp-customer-name').focus();
+    const nameInp = document.getElementById('inp-customer-name');
+    if (nameInp) nameInp.focus();
   },
 
   renderTableRows() {
@@ -278,7 +375,7 @@ const InvoiceEditor = {
       const rowTotal = ((parseFloat(it.cash) || 0) + (parseFloat(it.online) || 0)) * (parseInt(it.qty) || 1);
       return `
         <tr class="data-row" data-index="${idx}">
-          <td style="text-align: center; color: #555; width: 44px; padding: 5px 4px; font-weight: 500;">
+          <td style="text-align: center; color: #555; width: 38px; padding: 5px 2px; font-weight: 500;">
             <div style="display: flex; align-items: center; justify-content: center; gap: 2px;">
               <span>${idx + 1}</span>
               ${this.items.length > 1 ? `
@@ -288,7 +385,7 @@ const InvoiceEditor = {
           </td>
           
           <!-- Room Description Combobox with quick dropdown showing all presets -->
-          <td style="width: 220px; padding: 4px;">
+          <td style="width: 210px; padding: 4px;">
             <div class="room-desc-wrapper">
               <input type="text" class="inline-input cell-desc bold" data-index="${idx}" value="${Utils.escapeHtml(it.description)}" placeholder="Select or enter room..." autocomplete="off" />
               <button type="button" class="btn-room-dropdown" data-index="${idx}" title="Click to view all room presets">▼</button>
@@ -300,33 +397,33 @@ const InvoiceEditor = {
             </div>
           </td>
 
-          <!-- Check-in (95px, zero clipping) -->
-          <td style="width: 95px; padding: 4px 1px;">
+          <!-- Check-in (88px, zero clipping) -->
+          <td style="width: 88px; padding: 4px 1px;">
             <input type="text" class="inline-input cell-checkin" data-index="${idx}" value="${it.checkin}" style="text-align: center; cursor: pointer; font-size: 10.5px; padding: 2px 0; width: 100%; box-sizing: border-box;" title="Click to select Check-in & Check-out dates on calendar" readonly />
           </td>
 
-          <!-- Check-out (95px, zero clipping, auto-updates invoice date) -->
-          <td style="width: 95px; padding: 4px 1px;">
+          <!-- Check-out (88px, zero clipping, auto-updates invoice date) -->
+          <td style="width: 88px; padding: 4px 1px;">
             <input type="text" class="inline-input cell-checkout" data-index="${idx}" value="${it.checkout}" style="text-align: center; cursor: pointer; font-size: 10.5px; padding: 2px 0; width: 100%; box-sizing: border-box;" title="Click to select Check-in & Check-out dates on calendar" readonly />
           </td>
 
-          <!-- Qty (40px) -->
-          <td style="width: 40px; text-align: center; padding: 4px 1px;">
+          <!-- Qty (36px) -->
+          <td style="width: 36px; text-align: center; padding: 4px 1px;">
             <input type="number" min="1" class="inline-input cell-qty" data-index="${idx}" value="${it.qty || 1}" style="text-align: center; padding: 2px 0; width: 100%;" />
           </td>
 
-          <!-- Cash (70px, right-aligned, spinners removed) -->
-          <td style="width: 70px; text-align: right; padding: 4px 2px;">
+          <!-- Cash (72px, right-aligned, spinners removed) -->
+          <td style="width: 72px; text-align: right; padding: 4px 2px;">
             <input type="number" step="0.01" min="0" class="inline-input cell-cash bold" data-index="${idx}" value="${it.cash !== undefined ? it.cash : 0}" style="text-align: right; font-size: 11.5px; padding: 2px 2px; width: 100%;" placeholder="0" />
           </td>
 
-          <!-- Online (70px, right-aligned, spinners removed) -->
-          <td style="width: 70px; text-align: right; padding: 4px 2px;">
+          <!-- Online (72px, right-aligned, spinners removed) -->
+          <td style="width: 72px; text-align: right; padding: 4px 2px;">
             <input type="number" step="0.01" min="0" class="inline-input cell-online bold" data-index="${idx}" value="${it.online !== undefined ? it.online : 0}" style="text-align: right; font-size: 11.5px; padding: 2px 2px; width: 100%;" placeholder="0" />
           </td>
 
-          <!-- Row Total (110px, fits on ONE line) -->
-          <td class="cell-row-total" style="width: 110px; text-align: right; font-weight: 700; color: #111; padding: 4px 6px; white-space: nowrap; font-size: 11.5px;">
+          <!-- Row Total (120px, spacious, perfectly padded) -->
+          <td class="cell-row-total" style="width: 120px; text-align: right; font-weight: 700; color: #111; padding: 5px 12px 5px 4px; white-space: nowrap; font-size: 11.5px; box-sizing: border-box; overflow: hidden;">
             ₹ ${Utils.formatCurrency(rowTotal)}
           </td>
         </tr>
@@ -601,8 +698,30 @@ const InvoiceEditor = {
     });
   },
 
+  renderBillToEditorList(fields) {
+    const listEl = document.getElementById('fmt-billto-fields-list');
+    if (!listEl) return;
+
+    listEl.innerHTML = fields.map((f, idx) => `
+      <div class="fmt-billto-item" data-id="${f.id}" data-idx="${idx}" style="display: flex; align-items: center; gap: 8px; background: #F9FAFB; padding: 6px 8px; border: 1px solid #E5E7EB; border-radius: 4px;">
+        <span style="font-size: 11px; font-weight: 700; color: #555; width: 65px;">${f.deletable === false ? 'Primary *' : 'Field'}</span>
+        <input type="text" class="form-control fmt-field-label" value="${Utils.escapeHtml(f.label || '')}" placeholder="Label (e.g. Phone)" style="flex: 1; font-size: 11px; padding: 4px 6px; height: 26px;" />
+        <input type="text" class="form-control fmt-field-placeholder" value="${Utils.escapeHtml(f.placeholder || '')}" placeholder="Placeholder text" style="flex: 1; font-size: 11px; padding: 4px 6px; height: 26px;" />
+        <select class="form-control fmt-field-width" style="width: 95px; font-size: 11px; padding: 2px 4px; height: 26px;">
+          <option value="100%" ${f.width === '100%' ? 'selected' : ''}>Full Row</option>
+          <option value="50%" ${f.width !== '100%' ? 'selected' : ''}>Half Row</option>
+        </select>
+        ${f.deletable !== false ? `
+          <button type="button" class="btn-del-billto-field" data-id="${f.id}" style="color: #AA0000; border: none; background: transparent; padding: 0 6px; font-size: 18px; cursor: pointer; line-height: 1;" title="Delete this field from invoice">&times;</button>
+        ` : '<span style="width: 22px;"></span>'}
+      </div>
+    `).join('');
+  },
+
   bindEditFormatModal() {
     const modal = document.getElementById('modal-edit-format');
+    let currentFields = [];
+
     document.getElementById('btn-open-edit-format').addEventListener('click', () => {
       const s = this.settings || {};
       document.getElementById('fmt-hotel-name').value = s.hotel_name || '';
@@ -619,6 +738,9 @@ const InvoiceEditor = {
       document.getElementById('fmt-signatory').value = s.signatory_title || 'Authorized Signatory';
       document.getElementById('fmt-notes').value = s.notes_default || 'Thanks for your business.';
 
+      currentFields = this.getBillToFormat();
+      this.renderBillToEditorList(currentFields);
+
       modal.classList.add('open');
     });
 
@@ -626,7 +748,80 @@ const InvoiceEditor = {
     document.getElementById('btn-close-edit-format').addEventListener('click', closeModal);
     document.getElementById('btn-cancel-edit-format').addEventListener('click', closeModal);
 
+    // Bill To: Add Field button
+    const btnAddField = document.getElementById('btn-add-billto-field');
+    if (btnAddField) {
+      btnAddField.addEventListener('click', () => {
+        const fieldName = prompt('Enter label for new field (e.g. Phone Number, Aadhaar / ID, Vehicle No):', 'Phone Number');
+        if (!fieldName || !fieldName.trim()) return;
+        const cleanName = fieldName.trim();
+        const newId = 'custom_' + Date.now();
+        currentFields.push({
+          id: newId,
+          key: newId,
+          label: cleanName,
+          placeholder: `Enter ${cleanName}`,
+          required: false,
+          bold: false,
+          width: '100%',
+          deletable: true
+        });
+        this.renderBillToEditorList(currentFields);
+      });
+    }
+
+    // Bill To: Reset Default button
+    const btnResetFmt = document.getElementById('btn-reset-billto-format');
+    if (btnResetFmt) {
+      btnResetFmt.addEventListener('click', () => {
+        if (confirm('Reset "Bill To" fields back to default (Guest Name, Address, Pincode, GSTIN)?')) {
+          currentFields = JSON.parse(JSON.stringify(this.DEFAULT_BILL_TO_FORMAT));
+          this.renderBillToEditorList(currentFields);
+        }
+      });
+    }
+
+    // Bill To: Delete Field button
+    const listEl = document.getElementById('fmt-billto-fields-list');
+    if (listEl) {
+      listEl.addEventListener('click', (e) => {
+        const delBtn = e.target.closest('.btn-del-billto-field');
+        if (delBtn) {
+          const fid = delBtn.dataset.id;
+          currentFields = currentFields.filter(f => f.id !== fid);
+          this.renderBillToEditorList(currentFields);
+        }
+      });
+    }
+
     document.getElementById('btn-save-edit-format').addEventListener('click', async () => {
+      // 1. Gather configured Bill To fields
+      const updatedFields = [];
+      const itemEls = document.querySelectorAll('.fmt-billto-item');
+      itemEls.forEach(row => {
+        const id = row.dataset.id;
+        const label = row.querySelector('.fmt-field-label').value.trim();
+        const placeholder = row.querySelector('.fmt-field-placeholder').value.trim();
+        const width = row.querySelector('.fmt-field-width').value;
+        const existing = currentFields.find(x => x.id === id) || {};
+
+        updatedFields.push({
+          id: id,
+          key: existing.key || id,
+          label: label || 'Field',
+          placeholder: placeholder || label,
+          required: existing.required || false,
+          bold: existing.bold || false,
+          prefix: existing.prefix,
+          uppercase: existing.uppercase || false,
+          width: width,
+          deletable: existing.deletable !== false
+        });
+      });
+
+      this.saveBillToFormat(updatedFields);
+
+      // 2. Gather hotel profile & presets
       const presets = document.getElementById('fmt-presets').value
         .split('\n')
         .map(l => l.trim())
@@ -673,14 +868,50 @@ const InvoiceEditor = {
   },
 
   async getPayload() {
+    const fields = this.getBillToFormat();
+    let customerName = 'Valued Guest';
+    let customerGstin = '';
+    let customerAddress = '';
+    let customerPincode = '';
+    const customFields = {};
+
+    fields.forEach(f => {
+      if (f.id === 'name' || f.key === 'customer_name') {
+        const el = document.getElementById('inp-customer-name');
+        if (el) customerName = el.value.trim() || 'Valued Guest';
+      } else if (f.id === 'gstin' || f.key === 'customer_gstin') {
+        const el = document.getElementById('inp-customer-gstin');
+        if (el) customerGstin = el.value.trim();
+      } else if (f.id === 'address' || f.key === 'customer_address') {
+        const el = document.getElementById(`inp-billto-${f.id}`);
+        if (el) customerAddress = el.value.trim();
+      } else if (f.id === 'pincode' || f.key === 'customer_pincode') {
+        const el = document.getElementById(`inp-billto-${f.id}`);
+        if (el) customerPincode = el.value.trim();
+      } else {
+        const el = document.getElementById(`inp-billto-${f.id}`);
+        if (el) customFields[f.label || f.id] = el.value.trim();
+      }
+    });
+
+    // Clean lightweight address packaging for Supabase
+    let packagedAddress = customerAddress;
+    if (Object.keys(customFields).length > 0 || customerPincode) {
+      packagedAddress = JSON.stringify({
+        address: customerAddress,
+        pincode: customerPincode,
+        custom: customFields
+      });
+    }
+
     return {
       invoice_number: document.getElementById('inp-invoice-number').value.trim(),
       invoice_date: document.getElementById('inp-invoice-date').value,
       place_of_supply: document.getElementById('inp-place-of-supply').value.trim(),
-      customer_name: document.getElementById('inp-customer-name').value.trim() || 'Valued Guest',
-      customer_address: document.getElementById('inp-customer-address').value.trim(),
-      customer_pincode: document.getElementById('inp-customer-pincode').value.trim(),
-      customer_gstin: document.getElementById('inp-customer-gstin').value.trim(),
+      customer_name: customerName,
+      customer_address: packagedAddress,
+      customer_pincode: customerPincode,
+      customer_gstin: customerGstin,
       cgst_rate: this.settings ? this.settings.cgst_rate : 2.5,
       sgst_rate: this.settings ? this.settings.sgst_rate : 2.5,
       notes: document.getElementById('inp-notes').value.trim(),
@@ -752,10 +983,78 @@ const InvoiceEditor = {
     this.showToast('Generating official A4 PDF...');
 
     if (window.html2pdf) {
-      sheet.classList.add('pdf-exporting');
+      // Create a pristine typography clone for PDF generation (NO form controls, NO boxes, NO placeholders!)
+      const clone = sheet.cloneNode(true);
+      clone.id = 'invoice-sheet-pdf-clone';
+      clone.classList.add('pdf-exporting');
+
+      // 1. Remove all interactive UI controls from the clone
+      const uiSelectorsToRemove = [
+        '.add-row-bar',
+        '.btn-room-dropdown',
+        '.row-delete-btn',
+        '.room-options-menu',
+        '.no-print'
+      ];
+      uiSelectorsToRemove.forEach(sel => {
+        clone.querySelectorAll(sel).forEach(el => el.remove());
+      });
+
+      // 2. Map all inputs and textareas to clean typography text spans
+      const origInputs = sheet.querySelectorAll('input, textarea, select');
+      const cloneInputs = clone.querySelectorAll('input, textarea, select');
+
+      cloneInputs.forEach((clonedInput, i) => {
+        const origInput = origInputs[i];
+        const val = origInput ? origInput.value.trim() : clonedInput.value.trim();
+        const isBold = clonedInput.classList.contains('bold') || (origInput && window.getComputedStyle(origInput).fontWeight >= 600);
+        const textAlign = clonedInput.style.textAlign || (origInput ? window.getComputedStyle(origInput).textAlign : 'left');
+        const fontSize = clonedInput.style.fontSize || (origInput ? window.getComputedStyle(origInput).fontSize : '12px');
+        const textTransform = clonedInput.style.textTransform || (origInput ? window.getComputedStyle(origInput).textTransform : 'none');
+
+        const textSpan = document.createElement('span');
+        textSpan.className = 'pdf-clean-text' + (isBold ? ' bold' : '');
+        textSpan.textContent = val; // Clean value only, zero placeholder!
+        textSpan.style.display = 'inline-block';
+        textSpan.style.width = clonedInput.style.width || '100%';
+        textSpan.style.fontFamily = 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        textSpan.style.fontSize = fontSize;
+        textSpan.style.fontWeight = isBold ? '700' : '400';
+        textSpan.style.color = '#111111';
+        textSpan.style.textAlign = textAlign;
+        textSpan.style.textTransform = textTransform;
+        textSpan.style.lineHeight = '1.35';
+        textSpan.style.border = 'none';
+        textSpan.style.outline = 'none';
+        textSpan.style.background = 'transparent';
+        textSpan.style.padding = '0';
+        textSpan.style.margin = '0';
+
+        if (clonedInput.style.flex) textSpan.style.flex = clonedInput.style.flex;
+        if (clonedInput.style.maxWidth) textSpan.style.maxWidth = clonedInput.style.maxWidth;
+
+        clonedInput.parentNode.replaceChild(textSpan, clonedInput);
+      });
+
+      // If GSTIN was empty, hide the GSTIN row in clone so empty "GSTIN:" label is omitted
+      const gstinVal = document.getElementById('inp-customer-gstin') ? document.getElementById('inp-customer-gstin').value.trim() : '';
+      if (!gstinVal) {
+        clone.querySelectorAll('.bill-to-gstin-row').forEach(el => el.style.display = 'none');
+      }
+
+      // 3. Attach offscreen clone to body for html2canvas
+      const offscreenWrapper = document.createElement('div');
+      offscreenWrapper.style.position = 'fixed';
+      offscreenWrapper.style.left = '-9999px';
+      offscreenWrapper.style.top = '0';
+      offscreenWrapper.style.width = '794px';
+      offscreenWrapper.style.background = '#FFFFFF';
+      offscreenWrapper.style.zIndex = '-99999';
+      offscreenWrapper.appendChild(clone);
+      document.body.appendChild(offscreenWrapper);
 
       const opt = {
-        margin: [8, 0, 8, 0],
+        margin: [6, 0, 6, 0],
         filename: `Nayak_Sujay_${invNum}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: {
@@ -763,19 +1062,22 @@ const InvoiceEditor = {
           useCORS: true,
           logging: false,
           scrollY: 0,
-          scrollX: 0
+          scrollX: 0,
+          windowWidth: 794
         },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
       };
 
       try {
-        await html2pdf().set(opt).from(sheet).save();
+        await html2pdf().set(opt).from(clone).save();
         this.showToast(`Downloaded Nayak_Sujay_${invNum}.pdf`);
       } catch (err) {
         console.error('html2pdf error:', err);
         window.print();
       } finally {
-        sheet.classList.remove('pdf-exporting');
+        if (offscreenWrapper.parentNode) {
+          offscreenWrapper.parentNode.removeChild(offscreenWrapper);
+        }
       }
     } else {
       window.print();
@@ -797,17 +1099,40 @@ const InvoiceEditor = {
     document.getElementById('inp-invoice-number').value = inv.invoice_number;
     document.getElementById('inp-invoice-date').value = invDateDMY;
     document.getElementById('inp-place-of-supply').value = inv.place_of_supply || 'Karnataka (29)';
-    document.getElementById('inp-customer-name').value = inv.customer_name || '';
-    document.getElementById('inp-customer-address').value = inv.customer_address || '';
-    document.getElementById('inp-customer-pincode').value = inv.customer_pincode || '';
-    document.getElementById('inp-customer-gstin').value = inv.customer_gstin || '';
+    
+    // Parse packaged address if structured JSON
+    let addr = inv.customer_address || '';
+    let pin = inv.customer_pincode || '';
+    let custom = {};
+    if (typeof addr === 'string' && addr.startsWith('{')) {
+      try {
+        const parsed = JSON.parse(addr);
+        addr = parsed.address || '';
+        pin = parsed.pincode || pin;
+        custom = parsed.custom || {};
+      } catch (e) {
+        // keep addr as raw
+      }
+    }
+
+    const currentVals = {
+      customer_name: inv.customer_name || '',
+      customer_gstin: inv.customer_gstin || '',
+      customer_address: addr,
+      customer_pincode: pin,
+      ...custom
+    };
+
+    // Re-render Bill To fields with these loaded values
+    this.renderBillToFields(currentVals);
+
     document.getElementById('inp-notes').value = inv.notes || 'Thanks for your business.';
 
     this.items = (inv.items && inv.items.length > 0) ? inv.items.map(it => {
       const cin = Utils.isoToDMY(it.checkin || inv.invoice_date);
       const cout = Utils.isoToDMY(it.checkout || inv.invoice_date);
       return {
-        description: it.description || 'A/C DELUXE ROOM',
+        description: it.description || it.room || 'A/C DELUXE ROOM',
         checkin: cin,
         checkout: cout,
         qty: it.qty || 1,

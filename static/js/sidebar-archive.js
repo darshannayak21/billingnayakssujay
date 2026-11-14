@@ -128,7 +128,7 @@ const SidebarArchive = {
       html += `
         <div class="archive-dropdown">
           <div class="dropdown-header open" onclick="SidebarArchive.toggleDropdown(this)">
-            <span>FY ${Utils.escapeHtml(fy)} <span class="badge" style="margin-left:4px;">${fyData.total_bills}</span></span>
+            <span>${Utils.escapeHtml(fy)} <span class="badge" style="margin-left:4px;">${fyData.total_bills}</span></span>
             <span class="dropdown-chevron">▼</span>
           </div>
           <div class="dropdown-content open">
@@ -269,34 +269,57 @@ const SidebarArchive = {
     }
   },
 
+  clearSearch() {
+    const searchInp = document.getElementById('sidebar-search-inp');
+    if (searchInp) searchInp.value = '';
+    this.loadRecentReceipts();
+  },
+
   async searchReceipts(q) {
     const container = document.getElementById('panel-recent-receipts');
     // Switch to recent tab to show search results
     document.getElementById('tab-recent-receipts').click();
 
-    if (!q) {
+    if (!q || !q.trim()) {
       this.loadRecentReceipts();
       return;
     }
 
-    container.innerHTML = '<p style="color:#888; font-size:12px; padding:12px; text-align:center;">Searching...</p>';
+    const cleanQ = q.trim();
+    container.innerHTML = '<p style="color:#888; font-size:12px; padding:12px; text-align:center;">Searching bills...</p>';
     try {
       let results = [];
       if (window.AppDB) {
-        results = await window.AppDB.getRecentInvoices(q);
+        results = await window.AppDB.getRecentInvoices(cleanQ);
       } else {
-        const res = await fetch(`/api/invoices?q=${encodeURIComponent(q)}`);
+        const res = await fetch(`/api/invoices?q=${encodeURIComponent(cleanQ)}`);
         const data = await res.json();
         if (data.success) results = data.data || [];
       }
+
+      const headerHtml = `
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; font-size: 11px; background: #FFF3EA; border-bottom: 1px solid #FFE0CA; color: #D4540C; margin-bottom: 6px; border-radius: 4px;">
+          <span>Found <b>${results.length}</b> bill(s) for "<b>${Utils.escapeHtml(cleanQ)}</b>"</span>
+          <button type="button" onclick="SidebarArchive.clearSearch()" style="background: transparent; border: none; color: #D4540C; font-weight: 700; cursor: pointer; font-size: 11px;">✕ Clear</button>
+        </div>
+      `;
+
       if (!results || results.length === 0) {
-        container.innerHTML = '<p style="color:#888; font-size:12px; padding:16px; text-align:center;">No matching bills found.</p>';
+        container.innerHTML = headerHtml + `
+          <div style="padding: 16px 12px; text-align: center; color: #777; font-size: 12px;">
+            <p style="margin-bottom: 6px; font-weight: 600;">No matching bills found.</p>
+            <p style="font-size: 11px; color: #999;">Search by bill number (INV-001 or 001), guest name, date (14-11-2026), or notes.</p>
+          </div>
+        `;
       } else {
-        this.renderRecentReceipts(results, container);
+        container.innerHTML = headerHtml;
+        const listDiv = document.createElement('div');
+        this.renderRecentReceipts(results, listDiv);
+        container.appendChild(listDiv);
       }
     } catch (e) {
       console.error(e);
-      container.innerHTML = '<p style="color:#AA0000; font-size:11px; padding:12px; text-align:center;">Search error.</p>';
+      container.innerHTML = '<p style="color:#AA0000; font-size:11px; padding:12px; text-align:center;">Search error. Check network connection.</p>';
     }
   },
 
