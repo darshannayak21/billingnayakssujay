@@ -416,5 +416,49 @@
   <script src="/static/js/invoice-editor.js"></script>
   <script src="/static/js/sidebar-archive.js"></script>
   <script src="/static/js/auth.js"></script>
+  <!-- Aggressive Netlify Badge Removal Script -->
+  <style>
+    /* Absolute suppression of Netlify badge & drawer */
+    [class*="netlify"],
+    [id*="netlify"],
+    iframe[src*="netlify"],
+    a[href*="netlify.com"],
+    div:has(> a[href*="netlify.com"]),
+    div:has(> iframe[src*="netlify"]) {
+      display: none !important;
+      visibility: hidden !important;
+      opacity: 0 !important;
+      pointer-events: none !important;
+      width: 0 !important;
+      height: 0 !important;
+      position: absolute !important;
+      top: -9999px !important;
+      left: -9999px !important;
+    }
+  </style>
+  <script>
+    (function killNetlifyBadge() {
+      function removeElements() {
+        const matches = document.querySelectorAll(
+          'a[href*="netlify.com"], iframe[src*="netlify"], [class*="netlify"], [id*="netlify"], [data-netlify]'
+        );
+        matches.forEach(el => {
+          // Keep form attributes if any, remove visual badge/widget elements
+          if (el.tagName === 'A' || el.tagName === 'IFRAME' || el.classList.contains('netlify-badge')) {
+            el.remove();
+          } else if (el.shadowRoot) {
+            el.remove();
+          } else if (el.textContent && el.textContent.includes('Powered by Netlify')) {
+            el.remove();
+          }
+        });
+      }
+      removeElements();
+      const observer = new MutationObserver(removeElements);
+      observer.observe(document.documentElement, { childList: true, subtree: true });
+      window.addEventListener('DOMContentLoaded', removeElements);
+      window.addEventListener('load', removeElements);
+    })();
+  </script>
 </body>
 </html>
