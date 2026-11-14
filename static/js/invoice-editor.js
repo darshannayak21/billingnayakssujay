@@ -375,7 +375,7 @@ const InvoiceEditor = {
       const rowTotal = ((parseFloat(it.cash) || 0) + (parseFloat(it.online) || 0)) * (parseInt(it.qty) || 1);
       return `
         <tr class="data-row" data-index="${idx}">
-          <td style="text-align: center; color: #555; width: 38px; padding: 5px 2px; font-weight: 500;">
+          <td style="text-align: center; color: #555; width: 36px; padding: 5px 2px; font-weight: 500;">
             <div style="display: flex; align-items: center; justify-content: center; gap: 2px;">
               <span>${idx + 1}</span>
               ${this.items.length > 1 ? `
@@ -385,7 +385,7 @@ const InvoiceEditor = {
           </td>
           
           <!-- Room Description Combobox with quick dropdown showing all presets -->
-          <td style="width: 210px; padding: 4px;">
+          <td style="width: 224px; padding: 4px;">
             <div class="room-desc-wrapper">
               <input type="text" class="inline-input cell-desc bold" data-index="${idx}" value="${Utils.escapeHtml(it.description)}" placeholder="Select or enter room..." autocomplete="off" />
               <button type="button" class="btn-room-dropdown" data-index="${idx}" title="Click to view all room presets">▼</button>
@@ -397,13 +397,13 @@ const InvoiceEditor = {
             </div>
           </td>
 
-          <!-- Check-in (88px, zero clipping) -->
-          <td style="width: 88px; padding: 4px 1px;">
+          <!-- Check-in (85px, zero clipping) -->
+          <td style="width: 85px; padding: 4px 1px;">
             <input type="text" class="inline-input cell-checkin" data-index="${idx}" value="${it.checkin}" style="text-align: center; cursor: pointer; font-size: 10.5px; padding: 2px 0; width: 100%; box-sizing: border-box;" title="Click to select Check-in & Check-out dates on calendar" readonly />
           </td>
 
-          <!-- Check-out (88px, zero clipping, auto-updates invoice date) -->
-          <td style="width: 88px; padding: 4px 1px;">
+          <!-- Check-out (85px, zero clipping, auto-updates invoice date) -->
+          <td style="width: 85px; padding: 4px 1px;">
             <input type="text" class="inline-input cell-checkout" data-index="${idx}" value="${it.checkout}" style="text-align: center; cursor: pointer; font-size: 10.5px; padding: 2px 0; width: 100%; box-sizing: border-box;" title="Click to select Check-in & Check-out dates on calendar" readonly />
           </td>
 
@@ -422,8 +422,8 @@ const InvoiceEditor = {
             <input type="number" step="0.01" min="0" class="inline-input cell-online bold" data-index="${idx}" value="${it.online !== undefined ? it.online : 0}" style="text-align: right; font-size: 11.5px; padding: 2px 2px; width: 100%;" placeholder="0" />
           </td>
 
-          <!-- Row Total (120px, spacious, perfectly padded) -->
-          <td class="cell-row-total" style="width: 120px; text-align: right; font-weight: 700; color: #111; padding: 5px 12px 5px 4px; white-space: nowrap; font-size: 11.5px; box-sizing: border-box; overflow: hidden;">
+          <!-- Row Total (110px, perfectly aligned to table boundary) -->
+          <td class="cell-row-total" style="width: 110px; text-align: right; font-weight: 700; color: #111; padding: 5px 8px 5px 4px; white-space: nowrap; font-size: 11.5px; box-sizing: border-box; overflow: hidden; border-right: none !important;">
             ₹ ${Utils.formatCurrency(rowTotal)}
           </td>
         </tr>
@@ -983,101 +983,94 @@ const InvoiceEditor = {
     this.showToast('Generating official A4 PDF...');
 
     if (window.html2pdf) {
-      // Create a pristine typography clone for PDF generation (NO form controls, NO boxes, NO placeholders!)
-      const clone = sheet.cloneNode(true);
-      clone.id = 'invoice-sheet-pdf-clone';
-      clone.classList.add('pdf-exporting');
+      sheet.classList.add('pdf-exporting');
 
-      // 1. Remove all interactive UI controls from the clone
-      const uiSelectorsToRemove = [
-        '.add-row-bar',
-        '.btn-room-dropdown',
-        '.row-delete-btn',
-        '.room-options-menu',
-        '.no-print'
-      ];
-      uiSelectorsToRemove.forEach(sel => {
-        clone.querySelectorAll(sel).forEach(el => el.remove());
+      // 1. Temporarily replace all inputs in sheet with clean typography text spans (ZERO input boxes!)
+      const swaps = [];
+      const allInputs = sheet.querySelectorAll('input, textarea');
+
+      allInputs.forEach(inp => {
+        const span = document.createElement('span');
+        const val = inp.value.trim();
+        const isBold = inp.classList.contains('bold') || window.getComputedStyle(inp).fontWeight >= 600;
+        span.className = 'pdf-clean-text' + (isBold ? ' bold' : '');
+        span.textContent = val; // Clean text only, zero placeholders!
+        span.style.cssText = `
+          display: inline-block;
+          font-family: inherit;
+          font-size: ${window.getComputedStyle(inp).fontSize};
+          font-weight: ${isBold ? '700' : '400'};
+          color: #111111;
+          text-align: ${inp.style.textAlign || window.getComputedStyle(inp).textAlign};
+          text-transform: ${inp.style.textTransform || window.getComputedStyle(inp).textTransform};
+          line-height: 1.35;
+          background: transparent !important;
+          border: none !important;
+          outline: none !important;
+          padding: 0;
+          margin: 0;
+          box-shadow: none !important;
+        `;
+        if (inp.style.width) span.style.width = inp.style.width;
+        if (inp.style.flex) span.style.flex = inp.style.flex;
+        if (inp.style.maxWidth) span.style.maxWidth = inp.style.maxWidth;
+
+        inp.style.display = 'none';
+        inp.parentNode.insertBefore(span, inp);
+        swaps.push({ inp, span });
       });
 
-      // 2. Map all inputs and textareas to clean typography text spans
-      const origInputs = sheet.querySelectorAll('input, textarea, select');
-      const cloneInputs = clone.querySelectorAll('input, textarea, select');
-
-      cloneInputs.forEach((clonedInput, i) => {
-        const origInput = origInputs[i];
-        const val = origInput ? origInput.value.trim() : clonedInput.value.trim();
-        const isBold = clonedInput.classList.contains('bold') || (origInput && window.getComputedStyle(origInput).fontWeight >= 600);
-        const textAlign = clonedInput.style.textAlign || (origInput ? window.getComputedStyle(origInput).textAlign : 'left');
-        const fontSize = clonedInput.style.fontSize || (origInput ? window.getComputedStyle(origInput).fontSize : '12px');
-        const textTransform = clonedInput.style.textTransform || (origInput ? window.getComputedStyle(origInput).textTransform : 'none');
-
-        const textSpan = document.createElement('span');
-        textSpan.className = 'pdf-clean-text' + (isBold ? ' bold' : '');
-        textSpan.textContent = val; // Clean value only, zero placeholder!
-        textSpan.style.display = 'inline-block';
-        textSpan.style.width = clonedInput.style.width || '100%';
-        textSpan.style.fontFamily = 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-        textSpan.style.fontSize = fontSize;
-        textSpan.style.fontWeight = isBold ? '700' : '400';
-        textSpan.style.color = '#111111';
-        textSpan.style.textAlign = textAlign;
-        textSpan.style.textTransform = textTransform;
-        textSpan.style.lineHeight = '1.35';
-        textSpan.style.border = 'none';
-        textSpan.style.outline = 'none';
-        textSpan.style.background = 'transparent';
-        textSpan.style.padding = '0';
-        textSpan.style.margin = '0';
-
-        if (clonedInput.style.flex) textSpan.style.flex = clonedInput.style.flex;
-        if (clonedInput.style.maxWidth) textSpan.style.maxWidth = clonedInput.style.maxWidth;
-
-        clonedInput.parentNode.replaceChild(textSpan, clonedInput);
-      });
-
-      // If GSTIN was empty, hide the GSTIN row in clone so empty "GSTIN:" label is omitted
-      const gstinVal = document.getElementById('inp-customer-gstin') ? document.getElementById('inp-customer-gstin').value.trim() : '';
-      if (!gstinVal) {
-        clone.querySelectorAll('.bill-to-gstin-row').forEach(el => el.style.display = 'none');
+      // Hide GSTIN row if empty
+      const gstinInp = document.getElementById('inp-customer-gstin');
+      const gstinRow = sheet.querySelector('.bill-to-gstin-row');
+      let gstinRowHidden = false;
+      if (gstinInp && !gstinInp.value.trim() && gstinRow) {
+        gstinRow.style.display = 'none';
+        gstinRowHidden = true;
       }
 
-      // 3. Attach offscreen clone to body for html2canvas
-      const offscreenWrapper = document.createElement('div');
-      offscreenWrapper.style.position = 'fixed';
-      offscreenWrapper.style.left = '-9999px';
-      offscreenWrapper.style.top = '0';
-      offscreenWrapper.style.width = '794px';
-      offscreenWrapper.style.background = '#FFFFFF';
-      offscreenWrapper.style.zIndex = '-99999';
-      offscreenWrapper.appendChild(clone);
-      document.body.appendChild(offscreenWrapper);
+      // Hide add-row bar and room dropdowns during PDF capture
+      const uiHiddenEls = [];
+      sheet.querySelectorAll('.add-row-bar, .btn-room-dropdown, .row-delete-btn, .room-options-menu').forEach(el => {
+        if (el.style.display !== 'none') {
+          el.style.display = 'none';
+          uiHiddenEls.push(el);
+        }
+      });
 
       const opt = {
-        margin: [6, 0, 6, 0],
+        margin: 0,
         filename: `Nayak_Sujay_${invNum}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: {
           scale: 2,
           useCORS: true,
           logging: false,
-          scrollY: 0,
           scrollX: 0,
-          windowWidth: 794
+          scrollY: 0
         },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
       };
 
       try {
-        await html2pdf().set(opt).from(clone).save();
+        await html2pdf().set(opt).from(sheet).save();
         this.showToast(`Downloaded Nayak_Sujay_${invNum}.pdf`);
       } catch (err) {
         console.error('html2pdf error:', err);
         window.print();
       } finally {
-        if (offscreenWrapper.parentNode) {
-          offscreenWrapper.parentNode.removeChild(offscreenWrapper);
+        // Restore all inputs and UI elements
+        swaps.forEach(({ inp, span }) => {
+          inp.style.display = '';
+          span.remove();
+        });
+        if (gstinRowHidden && gstinRow) {
+          gstinRow.style.display = '';
         }
+        uiHiddenEls.forEach(el => {
+          el.style.display = '';
+        });
+        sheet.classList.remove('pdf-exporting');
       }
     } else {
       window.print();
