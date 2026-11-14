@@ -1022,6 +1022,25 @@ table.excel-table tr.data-row:hover .row-delete-btn {
   transform: translateX(-50%) translateY(0);
 }
 
+/* Hide Netlify Injected Drawer & Badge */
+#netlify-badge,
+.netlify-badge,
+[data-netlify-badge],
+iframe[src*="netlify"],
+div[id*="netlify"],
+div[class*="netlify-feedback"],
+.netlify-feedback-drawer,
+a[href*="netlify.com"][class*="badge"],
+div[data-netlify-drawer],
+netlify-drawer {
+  display: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
 /* CLEAN A4 PDF EXPORT STYLES (for html2pdf rendering) */
 .pdf-exporting {
   width: 794px !important;
