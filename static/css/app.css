@@ -91,6 +91,75 @@ body {
   letter-spacing: 0.08em;
 }
 
+/* Autosave Status Indicator Pill */
+.autosave-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 14px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  transition: all 0.2s ease;
+  user-select: none;
+  margin-left: 6px;
+}
+
+.autosave-pill.saved {
+  background: #ECFDF5;
+  border: 1px solid #A7F3D0;
+  color: #047857;
+}
+
+.autosave-pill.saving {
+  background: #EFF6FF;
+  border: 1px solid #BFDBFE;
+  color: #1D4ED8;
+}
+
+.autosave-pill.unsaved {
+  background: #FFFBEB;
+  border: 1px solid #FDE68A;
+  color: #B45309;
+}
+
+.autosave-pill.error {
+  background: #FEF2F2;
+  border: 1px solid #FECACA;
+  color: #B91C1C;
+  cursor: pointer;
+}
+
+.autosave-pill.error:hover {
+  background: #FEE2E2;
+}
+
+.autosave-spinner {
+  animation: autosave-spin 0.75s linear infinite;
+  display: inline-block;
+  transform-origin: center;
+}
+
+@keyframes autosave-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.autosave-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+  background: #F59E0B;
+  animation: autosave-pulse 1.3s ease-in-out infinite;
+}
+
+@keyframes autosave-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.35; transform: scale(0.85); }
+}
+
 .action-buttons {
   display: flex;
   align-items: center;

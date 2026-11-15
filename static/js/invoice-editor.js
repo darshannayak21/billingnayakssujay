@@ -9,6 +9,11 @@ const InvoiceEditor = {
   settings: null,
   currentInvoiceId: null,
   items: [],
+  autosaveTimer: null,
+  isDirty: false,
+  lastSavedPayloadStr: null,
+  isSaving: false,
+  queuedSave: false,
 
   // 2-Click Date Range Calendar Controller
   datePicker: {
@@ -164,8 +169,66 @@ const InvoiceEditor = {
 
         this.close();
         InvoiceEditor.showToast(`Dates: ${checkinDMY} to ${checkoutDMY} (Invoice Date updated)`);
+        InvoiceEditor.scheduleAutosave(250);
       }
     }
+  },
+
+  updateAutosaveStatus(state, label) {
+    const el = document.getElementById('autosave-status');
+    if (!el) return;
+
+    el.className = `autosave-pill ${state}`;
+    let iconHtml = '';
+    let title = '';
+
+    if (state === 'saved') {
+      iconHtml = `
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+      `;
+      title = 'All changes saved to Supabase Cloud';
+    } else if (state === 'saving') {
+      iconHtml = `
+        <svg class="autosave-spinner" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <circle cx="12" cy="12" r="9" stroke-opacity="0.25"></circle>
+          <path d="M12 3a9 9 0 0 1 9 9" stroke-linecap="round"></path>
+        </svg>
+      `;
+      title = 'Saving changes to Supabase...';
+    } else if (state === 'unsaved') {
+      iconHtml = `<span class="autosave-dot"></span>`;
+      title = 'Unsaved changes (autosaving shortly...)';
+    } else if (state === 'error') {
+      iconHtml = `
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+      `;
+      title = 'Save failed. Click to retry saving.';
+    }
+
+    el.innerHTML = `
+      <span class="autosave-icon">${iconHtml}</span>
+      <span class="autosave-text">${Utils.escapeHtml(label || (state === 'saved' ? 'Saved' : state))}</span>
+    `;
+    el.title = title;
+  },
+
+  scheduleAutosave(delay = 1200) {
+    this.isDirty = true;
+    this.updateAutosaveStatus('unsaved', 'Unsaved...');
+
+    if (this.autosaveTimer) {
+      clearTimeout(this.autosaveTimer);
+    }
+
+    this.autosaveTimer = setTimeout(() => {
+      this.saveInvoice({ silent: true });
+    }, delay);
   },
 
   async init() {
@@ -319,6 +382,14 @@ const InvoiceEditor = {
 
   async resetToNewInvoice() {
     this.currentInvoiceId = null;
+    this.isDirty = false;
+    this.lastSavedPayloadStr = null;
+    if (this.autosaveTimer) {
+      clearTimeout(this.autosaveTimer);
+      this.autosaveTimer = null;
+    }
+    this.updateAutosaveStatus('saved', 'Ready');
+
     const deleteBtn = document.getElementById('btn-delete-bill');
     if (deleteBtn) deleteBtn.style.display = 'none';
 
@@ -473,6 +544,7 @@ const InvoiceEditor = {
 
     this.renderTableRows();
     this.recalculate();
+    this.scheduleAutosave(250);
 
     const inputs = document.querySelectorAll('.cell-desc');
     if (inputs.length > 0) {
@@ -499,6 +571,7 @@ const InvoiceEditor = {
 
     this.renderTableRows();
     this.recalculate();
+    this.scheduleAutosave(250);
     this.showToast('Room removed');
   },
 
@@ -634,6 +707,7 @@ const InvoiceEditor = {
           }
         }
         itemEl.closest('.room-options-menu').classList.remove('open');
+        this.scheduleAutosave(250);
         e.stopPropagation();
         return;
       }
@@ -690,6 +764,33 @@ const InvoiceEditor = {
       } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'n') {
         e.preventDefault();
         this.resetToNewInvoice();
+      }
+    });
+
+    // Sheet-level input tracking for smart debounced autosave
+    const sheet = document.getElementById('invoice-sheet');
+    if (sheet) {
+      sheet.addEventListener('input', () => {
+        this.scheduleAutosave(1200);
+      });
+      sheet.addEventListener('change', () => {
+        this.scheduleAutosave(300);
+      });
+    }
+
+    // Manual click on autosave badge to save / retry immediately
+    const statusPill = document.getElementById('autosave-status');
+    if (statusPill) {
+      statusPill.addEventListener('click', () => {
+        this.saveInvoice({ silent: false, force: true });
+      });
+    }
+
+    // Unsaved changes warning on tab close
+    window.addEventListener('beforeunload', (e) => {
+      if (this.isDirty) {
+        e.preventDefault();
+        e.returnValue = '';
       }
     });
   },
@@ -940,17 +1041,48 @@ const InvoiceEditor = {
     };
   },
 
-  async saveInvoice() {
+  async saveInvoice(options = {}) {
+    if (this.autosaveTimer) {
+      clearTimeout(this.autosaveTimer);
+      this.autosaveTimer = null;
+    }
+
+    if (this.isSaving) {
+      this.queuedSave = true;
+      return null;
+    }
+
     const payload = await this.getPayload();
+    const payloadStr = JSON.stringify(payload);
+
+    // If nothing changed since last save and invoice already exists, skip redundant network call
+    if (this.currentInvoiceId && this.lastSavedPayloadStr === payloadStr && !options.force) {
+      this.isDirty = false;
+      this.updateAutosaveStatus('saved', 'Saved');
+      return { id: this.currentInvoiceId, invoice_number: payload.invoice_number };
+    }
+
+    this.isSaving = true;
+    this.updateAutosaveStatus('saving', 'Saving...');
+
     try {
       if (window.AppDB) {
         const saved = await window.AppDB.saveInvoice(payload, this.currentInvoiceId);
         if (saved) {
           this.currentInvoiceId = saved.id;
+          this.lastSavedPayloadStr = payloadStr;
+          this.isDirty = false;
+
           const deleteBtn = document.getElementById('btn-delete-bill');
           if (deleteBtn) deleteBtn.style.display = 'inline-flex';
           document.getElementById('inp-invoice-number').value = saved.invoice_number;
-          this.showToast(`Bill #${saved.invoice_number} saved to Supabase!`);
+
+          this.updateAutosaveStatus('saved', 'Saved');
+
+          if (!options.silent) {
+            this.showToast(`Bill #${saved.invoice_number} saved to Supabase!`);
+          }
+
           if (window.SidebarArchive) {
             window.SidebarArchive.loadRecentReceipts();
             window.SidebarArchive.loadArchiveTree();
@@ -975,27 +1107,48 @@ const InvoiceEditor = {
         const data = await res.json();
         if (data.success && data.data) {
           this.currentInvoiceId = data.data.id;
+          this.lastSavedPayloadStr = payloadStr;
+          this.isDirty = false;
+
           const deleteBtn = document.getElementById('btn-delete-bill');
           if (deleteBtn) deleteBtn.style.display = 'inline-flex';
           document.getElementById('inp-invoice-number').value = data.data.invoice_number;
-          this.showToast(`Bill #${data.data.invoice_number} saved!`);
+
+          this.updateAutosaveStatus('saved', 'Saved');
+
+          if (!options.silent) {
+            this.showToast(`Bill #${data.data.invoice_number} saved!`);
+          }
+
           if (window.SidebarArchive) {
             window.SidebarArchive.loadRecentReceipts();
           }
           return data.data;
         }
       }
-      this.showToast('Failed to save invoice', 'error');
+      this.updateAutosaveStatus('error', 'Save failed');
+      if (!options.silent) {
+        this.showToast('Failed to save invoice', 'error');
+      }
       return null;
     } catch (e) {
       console.error('Save error:', e);
-      this.showToast('Error saving: ' + e.message, 'error');
+      this.updateAutosaveStatus('error', 'Retry save');
+      if (!options.silent) {
+        this.showToast('Error saving: ' + e.message, 'error');
+      }
       return null;
+    } finally {
+      this.isSaving = false;
+      if (this.queuedSave) {
+        this.queuedSave = false;
+        setTimeout(() => this.saveInvoice(options), 150);
+      }
     }
   },
 
   async downloadPdf() {
-    let inv = await this.saveInvoice();
+    let inv = await this.saveInvoice({ force: true });
     if (!inv && this.currentInvoiceId) {
       inv = { id: this.currentInvoiceId, invoice_number: document.getElementById('inp-invoice-number').value.trim() };
     }
@@ -1099,7 +1252,7 @@ const InvoiceEditor = {
   },
 
   async printInvoice() {
-    await this.saveInvoice();
+    await this.saveInvoice({ force: true });
     window.print();
   },
 
@@ -1171,6 +1324,11 @@ const InvoiceEditor = {
 
     this.renderTableRows();
     this.recalculate();
+    this.isDirty = false;
+    this.getPayload().then(p => {
+      this.lastSavedPayloadStr = JSON.stringify(p);
+      this.updateAutosaveStatus('saved', 'Saved');
+    });
     this.showToast(`Loaded Bill ${inv.invoice_number}`);
   },
 
