@@ -611,6 +611,17 @@ const InvoiceEditor = {
     document.getElementById('val-cash-online-summary').textContent = `Cash Total: ₹ ${Utils.formatCurrency(totalCash)}  |  Online Total: ₹ ${Utils.formatCurrency(totalOnline)}`;
 
     this.currentTotals = { subtotal, totalCash, totalOnline, cgstRate, cgstAmt, sgstRate, sgstAmt, grandTotal };
+
+    // Live-sync active receipt card in sidebar to immediately reflect recalculated total
+    if (this.currentInvoiceId) {
+      const activeCard = document.querySelector(`.receipt-card[data-id="${this.currentInvoiceId}"]`) || document.querySelector('.receipt-card.active');
+      if (activeCard) {
+        const amtSpan = activeCard.querySelector('.receipt-card-header span:last-child');
+        if (amtSpan) {
+          amtSpan.textContent = `₹ ${Utils.formatCurrency(grandTotal)}`;
+        }
+      }
+    }
   },
 
   bindEvents() {

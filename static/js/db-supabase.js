@@ -203,7 +203,7 @@ const AppDB = {
   },
 
   async saveInvoice(payload, existingId = null) {
-    // 1. Calculate totals
+    // 1. Calculate totals accurately including room quantity
     let subtotal = 0;
     let totalCash = 0;
     let totalOnline = 0;
@@ -211,11 +211,15 @@ const AppDB = {
     const items = (payload.items || []).map((it, idx) => {
       const cash = parseFloat(it.cash) || 0;
       const online = parseFloat(it.online) || 0;
-      const amount = cash + online;
       const qty = parseInt(it.qty, 10) || 1;
-      subtotal += amount;
-      totalCash += cash;
-      totalOnline += online;
+      const rowCash = Math.round(cash * qty * 100) / 100;
+      const rowOnline = Math.round(online * qty * 100) / 100;
+      const rowTotal = Math.round((rowCash + rowOnline) * 100) / 100;
+
+      subtotal += rowTotal;
+      totalCash += rowCash;
+      totalOnline += rowOnline;
+
       return {
         item_index: idx + 1,
         room_category: it.description || it.room || 'A/C DELUXE ROOM',
@@ -224,9 +228,13 @@ const AppDB = {
         quantity: qty,
         cash_amount: cash,
         online_amount: online,
-        total_amount: amount
+        total_amount: rowTotal
       };
     });
+
+    subtotal = Math.round(subtotal * 100) / 100;
+    totalCash = Math.round(totalCash * 100) / 100;
+    totalOnline = Math.round(totalOnline * 100) / 100;
 
     const cgstRate = parseFloat(payload.cgst_rate) || 2.5;
     const sgstRate = parseFloat(payload.sgst_rate) || 2.5;
