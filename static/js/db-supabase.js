@@ -218,7 +218,7 @@ const AppDB = {
       totalOnline += online;
       return {
         item_index: idx + 1,
-        room_category: it.room || 'A/C DELUXE ROOM',
+        room_category: it.description || it.room || 'A/C DELUXE ROOM',
         check_in_date: it.checkin || '',
         check_out_date: it.checkout || '',
         quantity: qty,

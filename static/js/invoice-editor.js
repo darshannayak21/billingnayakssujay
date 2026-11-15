@@ -375,11 +375,18 @@ const InvoiceEditor = {
       const rowTotal = ((parseFloat(it.cash) || 0) + (parseFloat(it.online) || 0)) * (parseInt(it.qty) || 1);
       return `
         <tr class="data-row" data-index="${idx}">
-          <td style="text-align: center; color: #555; width: 36px; padding: 5px 2px; font-weight: 500;">
-            <div style="display: flex; align-items: center; justify-content: center; gap: 2px;">
-              <span>${idx + 1}</span>
+          <td style="text-align: center; color: #555; width: 36px; padding: 4px 1px; font-weight: 500;">
+            <div class="slno-wrapper" style="display: flex; align-items: center; justify-content: center; gap: 2px;">
+              <span class="row-index-num" style="font-size: 11px;">${idx + 1}</span>
               ${this.items.length > 1 ? `
-                <button type="button" class="row-delete-btn" data-index="${idx}" title="Delete row" style="display: none; padding: 0; margin-left: 2px; border: none; background: transparent; cursor: pointer; color: #AA0000; font-size: 13px;">&times;</button>
+                <button type="button" class="row-delete-btn" data-index="${idx}" title="Delete this room" aria-label="Delete room ${idx + 1}">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    <line x1="10" y1="11" x2="10" y2="17"></line>
+                    <line x1="14" y1="11" x2="14" y2="17"></line>
+                  </svg>
+                </button>
               ` : ''}
             </div>
           </td>
@@ -476,9 +483,23 @@ const InvoiceEditor = {
 
   deleteRow(index) {
     if (this.items.length <= 1) return;
+    if (this.datePicker && this.datePicker.close) {
+      this.datePicker.close();
+    }
     this.items.splice(index, 1);
+
+    // Update invoice date to reflect last row checkout date if present
+    if (this.items.length > 0) {
+      const lastRow = this.items[this.items.length - 1];
+      if (lastRow && lastRow.checkout) {
+        const invDateEl = document.getElementById('inp-invoice-date');
+        if (invDateEl) invDateEl.value = lastRow.checkout;
+      }
+    }
+
     this.renderTableRows();
     this.recalculate();
+    this.showToast('Room removed');
   },
 
   recalculate() {

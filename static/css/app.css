@@ -616,21 +616,32 @@ table.excel-table tr.data-row:hover {
 }
 
 .row-delete-btn {
-  background: transparent;
-  border: none;
-  color: #AA0000;
-  cursor: pointer;
-  padding: 2px;
-  display: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border: 1px solid #FECACA;
+  background: #FEF2F2;
+  color: #DC2626;
   border-radius: 3px;
-}
-
-table.excel-table tr.data-row:hover .row-delete-btn {
-  display: inline-block;
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+  line-height: 1;
 }
 
 .row-delete-btn:hover {
-  background: #FFDDDD;
+  background: #DC2626;
+  color: #FFFFFF;
+  border-color: #DC2626;
+  transform: scale(1.08);
+}
+
+.row-delete-btn svg {
+  pointer-events: none;
 }
 
 /* Add Row bar */
